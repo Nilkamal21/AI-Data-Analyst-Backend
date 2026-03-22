@@ -19,6 +19,10 @@ from executor import execute_code
 # =========================
 app = FastAPI()
 
+
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("outputs", exist_ok=True)
+
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 app.add_middleware(
