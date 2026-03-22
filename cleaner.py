@@ -5,32 +5,41 @@ def clean_data(df: pd.DataFrame):
 
     for col in df.columns:
 
-        # 🔥 Step 1: Try numeric first
+        # =========================
+        # 🔢 STEP 1: TRY NUMERIC
+        # =========================
         try:
-            df[col] = pd.to_numeric(df[col])
+            df[col] = pd.to_numeric(df[col], errors='raise')
             continue
         except:
             pass
 
-        # 🔥 Step 2: Try datetime ONLY if likely date
-        sample = df[col].astype(str).head(10)
-
+        # =========================
+        # 📅 STEP 2: TRY DATETIME (SMART)
+        # =========================
         date_keywords = ["date", "time", "year", "month"]
 
         if any(word in col.lower() for word in date_keywords):
-            converted = pd.to_datetime(
-                df[col],
-                errors='coerce',
-            )
+            converted = pd.to_datetime(df[col], errors='coerce')
 
-            # Only accept if most values are valid dates
+            # Accept only if majority valid
             if converted.notna().sum() > len(df) * 0.6:
                 df[col] = converted
+                continue  # ✅ IMPORTANT (stop further processing)
 
-        # 🔥 Step 3: Fill missing values
+        # =========================
+        # 🔤 STEP 3: HANDLE STRINGS
+        # =========================
         if df[col].dtype == "object":
-            df[col] = df[col].fillna("Unknown")
-        else:
+            if df[col].mode().empty:
+                df[col] = df[col].fillna("Unknown")
+            else:
+                df[col] = df[col].fillna(df[col].mode()[0])
+
+        # =========================
+        # 🔢 STEP 4: HANDLE NUMERIC (SAFE)
+        # =========================
+        elif pd.api.types.is_numeric_dtype(df[col]):
             df[col] = df[col].fillna(df[col].mean())
 
     return df
